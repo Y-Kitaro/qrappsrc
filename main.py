@@ -19,17 +19,17 @@ def row_to_QRimg(row, output_dir):
 def make_qrcode_csv(csv_dir, output_dir):
     qrlist = pd.read_csv(csv_dir, encoding="utf-8")
     qrlist.apply(row_to_QRimg, axis=1, output_dir=output_dir)
-    return True
+    return "Making QRCode completed."
 
 def main():
     with gr.Blocks() as page:
         with gr.Tab("Make QRCode Image"):
-            input_text = gr.Textbox(width="50%")
+            input_text = gr.Textbox()
             output_image = gr.Image(show_label=False, width="50%")
             gr.Interface(fn=make_qrcode, inputs=input_text, outputs=output_image)
         with gr.Tab("Make QRCode Image from CSV"):
-            csv_dir = gr.Textbox(label="csv_dir")
-            output_dir = gr.Textbox(label="output_dir")
+            csv_dir = gr.Textbox(label="csv_dir", value="qr.csv")
+            output_dir = gr.Textbox(label="output_dir", value="qrimg/")
             result_area = gr.TextArea()
             make_qecode_button = gr.Button("Make QRCode")
 
