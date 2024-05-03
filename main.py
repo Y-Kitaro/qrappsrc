@@ -1,6 +1,8 @@
 import qrcode
+import cv2
 import gradio as gr
 import pandas as pd
+import numpy as np
 
 # make QRCode Image
 def make_qrcode(text, version=10, error_correction=qrcode.constants.ERROR_CORRECT_L, box_size=10, border=8):
@@ -16,24 +18,42 @@ def row_to_QRimg(row, output_dir):
     img.save(f'{output_dir}{row["filename"]}.jpg')
 
 # make QRCode Image from csv
-def make_qrcode_csv(csv_dir, output_dir):
+def make_qrcode_csv(csv_dir, output_dir, progress=gr.Progress()):
     qrlist = pd.read_csv(csv_dir, encoding="utf-8")
-    qrlist.apply(row_to_QRimg, axis=1, output_dir=output_dir)
-    return "Making QRCode completed."
+    
+    for i in progress.tqdm(range(len(qrlist))):
+        row_to_QRimg(qrlist.iloc[i], output_dir=output_dir)
+    
+    return "Making QRCode completed"
+
+def decode_qrcode(input_image):
+    open_cv_image = np.array(input_image) 
+    img = open_cv_image[:, :, ::-1].copy() 
+
+    detector = cv2.QRCodeDetector()
+
+    data, _, _ = detector.detectAndDecode(img)
+
+    if data:
+        return data
+    else:
+        return "QR Code not detected"
 
 def main():
     with gr.Blocks() as page:
         with gr.Tab("Make QRCode Image"):
-            input_text = gr.Textbox()
+            version = gr.Slider(10, minimum=1, maximum=40, step=1)
+            input_text = gr.Textbox("input_Text")
             output_image = gr.Image(show_label=False, width="50%")
-            gr.Interface(fn=make_qrcode, inputs=input_text, outputs=output_image)
+            gr.Interface(fn=make_qrcode, inputs=[input_text, version] , outputs=output_image)
+        with gr.Tab("Decode QRCode Image"):
+            input_image = gr.Image()
+            output_text = gr.TextArea(label="decoded text")
+            gr.Interface(fn=decode_qrcode, inputs=input_image, outputs=output_text)
         with gr.Tab("Make QRCode Image from CSV"):
             csv_dir = gr.Textbox(label="csv_dir", value="qr.csv")
             output_dir = gr.Textbox(label="output_dir", value="qrimg/")
-            result_area = gr.TextArea()
-            make_qecode_button = gr.Button("Make QRCode")
-
-        make_qecode_button.click(fn=make_qrcode_csv, inputs=[csv_dir, output_dir], outputs=result_area)
+            gr.Interface(fn=make_qrcode_csv, inputs=[csv_dir, output_dir], outputs="text")
     page.launch(inbrowser=True)
 
 if __name__=="__main__":
