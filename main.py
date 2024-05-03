@@ -1,3 +1,5 @@
+import os
+
 import qrcode
 import cv2
 import gradio as gr
@@ -19,12 +21,29 @@ def row_to_QRimg(row, output_dir):
 
 # make QRCode Image from csv
 def make_qrcode_csv(csv_dir, output_dir, progress=gr.Progress()):
-    qrlist = pd.read_csv(csv_dir, encoding="utf-8")
+    # Check paths exist
+    if not os.path.exists(csv_dir):
+        return "CSV file not found. Please check the path to the CSV file."
+    
+    try:
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+    except Exception as e:
+        return "Failed to create output directory. Please check the permissions and path to the output directory."
+    
+    try:
+        qrlist = pd.read_csv(csv_dir, encoding="utf-8")
+    except Exception as e:
+        return "Error in reading the CSV file. Please ensure the CSV file is in the correct format."
+
     
     for i in progress.tqdm(range(len(qrlist))):
-        row_to_QRimg(qrlist.iloc[i], output_dir=output_dir)
-    
-    return "Making QRCode completed"
+        try:
+            row_to_QRimg(qrlist.iloc[i], output_dir=output_dir)
+        except Exception as e:
+            return f"Failed to create QR code for row {i}. Please check the data in the CSV file."
+
+    return "QR code creation completed successfully."
 
 def decode_qrcode(input_image):
     open_cv_image = np.array(input_image) 
