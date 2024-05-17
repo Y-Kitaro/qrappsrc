@@ -49,7 +49,7 @@ def decode_qrcode(input_image):
     open_cv_image = np.array(input_image) 
     img = open_cv_image[:, :, ::-1].copy() 
 
-    detector = cv2.QRCodeDetector()
+    detector = cv2.QRCodeDetectorAruco()
 
     data, _, _ = detector.detectAndDecode(img)
 
