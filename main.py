@@ -6,9 +6,16 @@ import gradio as gr
 import pandas as pd
 import numpy as np
 
+ERROR_CORRECTION_LEVELS =   {
+                            "L":qrcode.ERROR_CORRECT_L, 
+                            "M":qrcode.ERROR_CORRECT_M,
+                            "Q":qrcode.ERROR_CORRECT_Q,
+                            "H":qrcode.ERROR_CORRECT_H,
+                            }
 # make QRCode Image
-def make_qrcode(text, version=10, error_correction=qrcode.constants.ERROR_CORRECT_L, box_size=10, border=8):
-    qr = qrcode.QRCode(version=version, error_correction=error_correction, box_size=box_size, border=border)
+def make_qrcode(text, version=10, error_correction_level_key="L", box_size=10, border=8):
+    error_correction_level = ERROR_CORRECTION_LEVELS.get(error_correction_level_key, qrcode.ERROR_CORRECT_L)
+    qr = qrcode.QRCode(version=version, error_correction=error_correction_level, box_size=box_size, border=border)
     qr.add_data(text)
     qr.make()
     img = qr.make_image(fillcolor="black")
@@ -62,9 +69,11 @@ def main():
     with gr.Blocks() as page:
         with gr.Tab("Make QRCode Image"):
             version = gr.Slider(10, minimum=1, maximum=40, step=1)
+            error_correction_level_key = gr.Dropdown(list(ERROR_CORRECTION_LEVELS.keys()), label="Error Correction Level")
+            error_correction_level_key.value = "L"
             input_text = gr.Textbox("input_Text")
             output_image = gr.Image(show_label=False, width="50%")
-            gr.Interface(fn=make_qrcode, inputs=[input_text, version] , outputs=output_image)
+            gr.Interface(fn=make_qrcode, inputs=[input_text, version, error_correction_level_key] , outputs=output_image)
         with gr.Tab("Decode QRCode Image"):
             input_image = gr.Image()
             output_text = gr.TextArea(label="decoded text")
