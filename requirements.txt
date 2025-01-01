@@ -1,5 +1,5 @@
 Pillow
 pandas
-gradio
 qrcode
 opencv-python
+tk
