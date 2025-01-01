@@ -4,7 +4,6 @@ import qrcode
 import cv2
 import pandas as pd
 import numpy as np
-import gradio as gr
 
 ERROR_CORRECTION_LEVELS = {
     "L": qrcode.ERROR_CORRECT_L,
@@ -28,7 +27,7 @@ def row_to_QRimg(row, output_dir):
     img.save(f'{output_dir}{row["filename"]}.jpg')
 
 # make QRCode Image from csv
-def make_qrcode_csv(csv_dir, output_dir, progress=gr.Progress()):
+def make_qrcode_csv(csv_dir, output_dir):
     # Check paths exist
     if not os.path.exists(csv_dir):
         return "CSV file not found. Please check the path to the CSV file."
@@ -44,7 +43,7 @@ def make_qrcode_csv(csv_dir, output_dir, progress=gr.Progress()):
     except Exception as e:
         return "Error in reading the CSV file. Please ensure the CSV file is in the correct format."
     
-    for i in progress.tqdm(range(len(qrlist))):
+    for i in range(len(qrlist)):
         try:
             row_to_QRimg(qrlist.iloc[i], output_dir=output_dir)
         except Exception as e:
