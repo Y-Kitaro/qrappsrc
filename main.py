@@ -9,7 +9,7 @@ import os
 # 定数定義
 WINDOW_MIN_WIDTH = 600
 WINDOW_MIN_HEIGHT = 400
-IMAGE_SCALE_FACTOR = 0.7
+IMAGE_SCALE_FACTOR = 0.9
 DEFAULT_CSV_PATH = "./qrcode_template.csv"
 DEFAULT_OUTPUT_DIR = "./qrimg/"
 SUPPORTED_IMAGE_TYPES = [("Image files", "*.png *.jpg *.jpeg *.bmp *.gif")]
@@ -26,6 +26,9 @@ class QRCodeApp(tk.Tk):
 
         self.create_tabs()
 
+        # ウィンドウサイズが変わったら画像をリサイズするようにバインド
+        self.bind('<Configure>', self.handle_resize)
+
     def create_tabs(self):
         self.create_qrcode_tab()
         self.create_decode_qr_tab()
@@ -35,28 +38,37 @@ class QRCodeApp(tk.Tk):
         make_qr_frame = ttk.Frame(self.notebook)
         self.notebook.add(make_qr_frame, text="QRコード作成")
 
-        version_label = ttk.Label(make_qr_frame, text="バージョン")
-        version_label.grid(row=0, column=0, pady=5)
-        self.version_var = tk.IntVar(value=10)
-        version_entry = ttk.Entry(make_qr_frame, textvariable=self.version_var, width=5)
-        version_entry.grid(row=0, column=1, padx=5, pady=5)
+        setting_frame = ttk.Frame(make_qr_frame)
+        setting_frame.pack(side='top')
 
-        ecl_label = ttk.Label(make_qr_frame, text="誤り訂正レベル")
-        ecl_label.grid(row=0, column=2, pady=5)
+        version_label = ttk.Label(setting_frame, text="バージョン")
+        version_label.pack(side='left', padx=5, pady=2)
+
+        self.version_var = tk.IntVar(value=10)
+        version_entry = ttk.Entry(setting_frame, textvariable=self.version_var, width=5)
+        version_entry.pack(side='left', padx=5, pady=2)
+
+        ecl_label = ttk.Label(setting_frame, text="誤り訂正レベル")
+        ecl_label.pack(side='left', padx=5, pady=2)
+
         self.ecl_var = tk.StringVar(value="L")
-        ecl_dropdown = ttk.Combobox(make_qr_frame, textvariable=self.ecl_var, state="readonly", values=list(qrcode_utils.ERROR_CORRECTION_LEVELS.keys()))
-        ecl_dropdown.grid(row=0, column=3, columnspan=2, pady=5)
+        ecl_dropdown = ttk.Combobox(setting_frame, textvariable=self.ecl_var, state="readonly", values=list(qrcode_utils.ERROR_CORRECTION_LEVELS.keys()))
+        ecl_dropdown.pack(side='left', padx=5, pady=5)
 
         input_text_label = ttk.Label(make_qr_frame, text="入力テキスト")
-        input_text_label.grid(row=1, column=0, pady=5)
-        self.input_text = tk.Text(make_qr_frame, height=5)
-        self.input_text.grid(row=1, column=1, columnspan=4, pady=5)
+        input_text_label.pack(side='top', anchor='w', padx=5, pady=2)
 
-        self.output_image = ttk.Label(make_qr_frame)
-        self.output_image.grid(row=2, column=0, columnspan=5, pady=5)
+        self.input_text = tk.Text(make_qr_frame, height=5)
+        self.input_text.pack(side='top', fill='x', padx=5, pady=5)
+
+        self.output_image_frame = ttk.Frame(make_qr_frame)
+        self.output_image_frame.pack(side='top', fill='both', expand=True, padx=5, pady=5)
+
+        self.output_image = ttk.Label(self.output_image_frame)
+        self.output_image.pack(side='top', padx=5, pady=5)
 
         make_qr_button = ttk.Button(make_qr_frame, text="QRコード生成", command=self.make_qr_code)
-        make_qr_button.grid(row=3, column=0, columnspan=5, pady=10)
+        make_qr_button.pack(padx=5, pady=10)
 
     def make_qr_code(self):
         text = self.input_text.get("1.0", tk.END).strip()
@@ -64,28 +76,37 @@ class QRCodeApp(tk.Tk):
         ecl = self.ecl_var.get()
         try:
             qr_image = qrcode_utils.make_qrcode(text, version, qrcode_utils.ERROR_CORRECTION_LEVELS[ecl])
+            self.qr_image_cache = qr_image  # 画像をキャッシュしておく
             qr_image = self.resize_qr_image(qr_image)
             self.display_qr_image(qr_image)
         except Exception as e:
             messagebox.showerror("エラー", f"QRコード生成エラー: {e}")
 
+    def handle_resize(self, event):
+        if hasattr(self, 'qr_image_cache'):
+            qr_image = self.resize_qr_image(self.qr_image_cache)
+            self.display_qr_image(qr_image)
+
     def create_decode_qr_tab(self):
         decode_qr_frame = ttk.Frame(self.notebook)
         self.notebook.add(decode_qr_frame, text="QRコード読み取り")
 
-        input_image_label = ttk.Label(decode_qr_frame, text="画像ファイルパス")
-        input_image_label.grid(row=0, column=0, pady=5)
-        self.input_image_entry = ttk.Entry(decode_qr_frame, width=40)
-        self.input_image_entry.grid(row=0, column=1, pady=5)
+        input_image_frame = ttk.Frame(decode_qr_frame)
+        input_image_frame.pack(side='top')
+        input_image_label = ttk.Label(input_image_frame, text="画像ファイルパス")
+        input_image_label.pack(side='left', padx=5, pady=5)
+        self.input_image_entry = ttk.Entry(input_image_frame, width=40)
+        self.input_image_entry.pack(side='left', padx=5, pady=5)
+        select_image_button = ttk.Button(input_image_frame, text="画像選択", command=lambda: self.select_file(self.input_image_entry, SUPPORTED_IMAGE_TYPES))
+        select_image_button.pack(side='left', padx=5, pady=5)
 
-        select_image_button = ttk.Button(decode_qr_frame, text="画像選択", command=lambda: self.select_file(self.input_image_entry, SUPPORTED_IMAGE_TYPES))
-        select_image_button.grid(row=0, column=2, pady=5)
-
+        output_text_label = ttk.Label(decode_qr_frame, text="デコードテキスト")
+        output_text_label.pack(side='top', anchor='w', padx=5, pady=5)
         self.output_text = tk.Text(decode_qr_frame, height=5)
-        self.output_text.grid(row=1, column=0, columnspan=3, pady=5)
+        self.output_text.pack(side='top', padx=5, pady=5)
 
         decode_button = ttk.Button(decode_qr_frame, text="QRコード読み取り", command=self.decode_qr)
-        decode_button.grid(row=2, column=0, columnspan=3, pady=10)
+        decode_button.pack(side='top', padx=5, pady=5)
 
     def decode_qr(self):
         filepath = self.input_image_entry.get()
@@ -104,26 +125,28 @@ class QRCodeApp(tk.Tk):
         csv_qr_frame = ttk.Frame(self.notebook)
         self.notebook.add(csv_qr_frame, text="CSVからQRコード作成")
 
-        csv_dir_label = ttk.Label(csv_qr_frame, text="CSVファイルパス")
-        csv_dir_label.grid(row=0, column=0, pady=5)
-        self.csv_dir_entry = ttk.Entry(csv_qr_frame, width=40)
+        csv_dir_frame = ttk.Frame(csv_qr_frame)
+        csv_dir_frame.pack(side='top')
+        csv_dir_label = ttk.Label(csv_dir_frame, text="CSVファイルパス")
+        csv_dir_label.pack(side='left', padx=5, pady=5)
+        self.csv_dir_entry = ttk.Entry(csv_dir_frame, width=40)
         self.csv_dir_entry.insert(0, DEFAULT_CSV_PATH)
-        self.csv_dir_entry.grid(row=0, column=1, pady=5)
+        self.csv_dir_entry.pack(side='left', padx=5, pady=5)
+        select_csv_dir_button = ttk.Button(csv_dir_frame, text="csv選択", command=lambda: self.select_file(self.csv_dir_entry, SUPPORTED_CSV_TYPES))
+        select_csv_dir_button.pack(side='left', padx=5, pady=5)
 
-        select_csv_dir_button = ttk.Button(csv_qr_frame, text="csv選択", command=lambda: self.select_file(self.csv_dir_entry, SUPPORTED_CSV_TYPES))
-        select_csv_dir_button.grid(row=0, column=2, pady=5)
-
-        output_dir_label = ttk.Label(csv_qr_frame, text="出力ディレクトリ")
-        output_dir_label.grid(row=1, column=0, pady=5)
-        self.output_dir_entry = ttk.Entry(csv_qr_frame, width=40)
+        output_dir_frame = ttk.Frame(csv_qr_frame)
+        output_dir_frame.pack(side='top')
+        output_dir_label = ttk.Label(output_dir_frame, text="出力ディレクトリ")
+        output_dir_label.pack(side='left', padx=5, pady=5)
+        self.output_dir_entry = ttk.Entry(output_dir_frame, width=40)
         self.output_dir_entry.insert(0, DEFAULT_OUTPUT_DIR)
-        self.output_dir_entry.grid(row=1, column=1, pady=5)
-
-        select_imgdir_button = ttk.Button(csv_qr_frame, text="出力ディレクトリ選択", command=lambda: self.select_directory(self.output_dir_entry))
-        select_imgdir_button.grid(row=1, column=2, pady=5)
+        self.output_dir_entry.pack(side='left', padx=5, pady=5)
+        select_imgdir_button = ttk.Button(output_dir_frame, text="出力ディレクトリ選択", command=lambda: self.select_directory(self.output_dir_entry))
+        select_imgdir_button.pack(side='left', padx=5, pady=5)
 
         make_qr_csv_button = ttk.Button(csv_qr_frame, text="CSVからQRコード生成", command=self.make_qr_from_csv)
-        make_qr_csv_button.grid(row=2, column=0, columnspan=3, pady=10)
+        make_qr_csv_button.pack(side='top', padx=5, pady=5)
 
     def make_qr_from_csv(self):
         csv_dir = self.csv_dir_entry.get()
@@ -139,10 +162,13 @@ class QRCodeApp(tk.Tk):
             messagebox.showerror("エラー", f"CSVからのQRコード生成エラー: {e}")
 
     def resize_qr_image(self, qr_image):
-        """QRコード画像をウィンドウサイズに合わせてリサイズする"""
-        window_width = self.winfo_width()
-        window_height = self.winfo_height()
-        max_image_size = min(window_width * IMAGE_SCALE_FACTOR, window_height * IMAGE_SCALE_FACTOR)
+        """QRコード画像をoutput_imageのサイズに調整"""
+        # ラベルのサイズを取得
+        label_width = self.output_image_frame.winfo_width()
+        label_height = self.output_image_frame.winfo_height()
+
+        # リサイズ操作
+        max_image_size = min(label_width*IMAGE_SCALE_FACTOR, label_height*IMAGE_SCALE_FACTOR)
         return qr_image.resize((int(max_image_size), int(max_image_size)), Image.LANCZOS)
 
     def display_qr_image(self, qr_image):
