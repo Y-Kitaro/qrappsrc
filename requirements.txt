@@ -2,4 +2,4 @@ Pillow
 pandas
 qrcode
 opencv-python
-tk
+pywebview
