@@ -24,8 +24,8 @@ const TabContent = ({ activeTab }) => {
     setQrCodeImage('');
 
     try {
-      if (window.pywebview && window.pywebview.api.make_qrcode_base64) {
-        const imageData = await window.pywebview.api.make_qrcode_base64(
+      if (window.pywebview && window.pywebview.api.qrcode_utils.make_qrcode_base64) {
+        const imageData = await window.pywebview.api.qrcode_utils.make_qrcode_base64(
           inputText, Number(version), errorCorrection
         );
         if (imageData.startsWith("data:image/png;base64,")) {
@@ -81,7 +81,7 @@ const TabContent = ({ activeTab }) => {
     setBulkStatus('');
 
     try {
-        if (!window.pywebview || !window.pywebview.api.make_qrcode_csv) {
+        if (!window.pywebview || !window.pywebview.api.qrcode_utils.make_qrcode_csv) {
             setBulkStatus('Pywebview API (make_qrcode_csv) が見つかりません。');
             setBulkLoading(false);
             return;
@@ -90,7 +90,7 @@ const TabContent = ({ activeTab }) => {
         setBulkStatus(`処理中... CSV: ${qrcodeCsvFile}, 出力先: ${qrcodeSaveDir}`);
 
         // Pythonの関数を呼び出す
-        const result = await window.pywebview.api.make_qrcode_csv(qrcodeCsvFile, qrcodeSaveDir);
+        const result = await window.pywebview.api.qrcode_utils.make_qrcode_csv(qrcodeCsvFile, qrcodeSaveDir);
         setBulkStatus(`処理結果: ${result}`);
 
     } catch (err) {
@@ -113,14 +113,14 @@ const TabContent = ({ activeTab }) => {
     setDecodeStatus('');
 
     try {
-      if (!window.pywebview || !window.pywebview.api.decode_qrcode) {
+      if (!window.pywebview || !window.pywebview.api.qrcode_utils.decode_qrcode) {
         setDecodeStatus('Pywebview API (decode_qrcode) が見つかりません。');
         setDecodeLoading(false);
         return;
       }
       
       // 画像ファイルを選択させる
-      const result = await window.pywebview.api.decode_qrcode();
+      const result = await window.pywebview.api.qrcode_utils.decode_qrcode();
       if (result.startsWith("Error")) {
           setDecodeStatus(result);
       } else {
