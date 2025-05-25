@@ -17,27 +17,8 @@ ERROR_CORRECTION_LEVELS = {
     }
 
 class Qrcode_utils:
-
-    def set_window(self, window):
-        self.window = window
-
-    def open_file(self, file_types=(), allow_multiple=False):
-        result = self.window.create_file_dialog(
-            webview.OPEN_DIALOG,
-            file_types=file_types,
-            allow_multiple=allow_multiple
-        )
-        # pywebviewはタプルで返すため、扱いやすいように整形する
-        if not result:
-            return None
-        return list(result) if allow_multiple else result[0]
-
-    def select_folder(self):
-        result = self.window.create_file_dialog(
-            webview.FOLDER_DIALOG,
-        )
-        # フォルダ選択は常に単一のパス（のタプル）が返る
-        return result[0] if result else None
+    def __init__(self, api):
+        self.api = api
 
     # make QRCode Image
     def make_qrcode(self, text, version=10, error_correction_level_key="L", box_size=10, border=8):
@@ -60,14 +41,11 @@ class Qrcode_utils:
     # apply
     def row_to_QRimg(self, row, output_dir):
         img = self.make_qrcode(row["text"])
-        print(os.path.join(output_dir, f'{row["filename"]}.jpg'))
         img.save(os.path.join(output_dir, f'{row["filename"]}.jpg'))
 
     # make QRCode Image from csv
     def make_qrcode_csv(self, csv_dir, output_dir):
         # Check paths exist
-        print(csv_dir)
-        print(output_dir)
         if not os.path.exists(csv_dir):
             return "CSV file not found. Please check the path to the CSV file."
         
@@ -91,7 +69,7 @@ class Qrcode_utils:
         return "QR code creation completed successfully."
 
     def decode_qrcode(self):
-        qrcode_path = self.open_file()
+        qrcode_path = self.api.open_file()
         try:
             img = Image.open(qrcode_path).convert("RGB")
             open_cv_image = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
