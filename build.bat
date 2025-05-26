@@ -1,50 +1,106 @@
 @echo off
 setlocal
 
-REM ビルドするスクリプト名
+REM --- 設定項目 ---
+REM 仮想環境のパス
+set VENV_PATH=venv
+REM PyInstallerの実行ファイルパス
+set PYINSTALLER_CMD=%VENV_PATH%\Scripts\pyinstaller.exe
+REM ビルドするPythonスクリプト
 set SCRIPT_NAME=main.py
-REM コピーするファイル
-set RESOURCE_FILE=resource\qrcode_template.csv
-REM 出力ディレクトリ名
-set DIST_DIR=dist
-REM 作成するzipファイル名
-set ZIP_NAME=qrimg.zip
+REM アプリケーション名 (実行ファイル名と出力フォルダ名になる)
+set APP_NAME=QRApp
+REM Reactのビルド成果物があるディレクトリ
+set WEB_UI_DIR=webui\dist
+REM その他のリソースファイルがあるディレクトリ
+set RESOURCE_DIR=resource
 
-REM distディレクトリを削除（存在する場合）
-if exist "%DIST_DIR%" (
-    rmdir /s /q "%DIST_DIR%"
+REM --- ビルド処理 ---
+
+echo.
+echo =================================
+echo  React + Pywebview アプリのビルドを開始します
+echo =================================
+echo.
+
+REM 前回のビルド結果をクリーンアップ
+echo --- 前回のビルド結果を削除しています...
+if exist "dist\%APP_NAME%" (
+    rmdir /s /q "dist\%APP_NAME%"
 )
-
-REM zipファイルを削除（存在する場合）
-if exist "%ZIP_NAME%" (
-    del "%ZIP_NAME%"
+if exist "build" (
+    rmdir /s /q "build"
 )
+if exist "%APP_NAME%.zip" (
+    del "%APP_NAME%.zip"
+)
+echo.
 
-call venv\Scripts\activate
-
-REM PyInstallerでビルド
-pyinstaller -F -w "%SCRIPT_NAME%"
-
-REM resourceファイルが存在するか確認
-if not exist "%RESOURCE_FILE%" (
-    echo エラー: %RESOURCE_FILE% が見つかりません。
+REM Reactアプリのビルド
+echo --- Reactアプリをビルドしています...
+cd webui
+call npm run build
+cd ..
+if %errorlevel% neq 0 (
+    echo Reactのビルドに失敗しました。
     pause
     exit /b 1
 )
+echo.
 
-REM distディレクトリにresourceファイルをコピー
-if exist "%DIST_DIR%" (
-    xcopy "%RESOURCE_FILE%" "%DIST_DIR%" /Y
+
+echo --- PyInstallerでEXEをビルドしています...
+
+REM PyInstallerの実行
+%PYINSTALLER_CMD% ^
+    --name %APP_NAME% ^
+    --windowed ^
+    --clean ^
+    %SCRIPT_NAME%
+
+REM ビルド成功チェック
+if %errorlevel% neq 0 (
+    echo.
+    echo !!! PyInstallerのビルドに失敗しました。
+    pause
+    exit /b 1
+)
+echo --- ビルドが正常に完了しました。
+echo.
+
+echo --- 関連ファイルのコピー ---
+
+if exist "dist\%APP_NAME%" (
+    echo --- Web UI ファイルをコピーしています...
+    xcopy "%WEB_UI_DIR%" "dist\%APP_NAME%\webui\" /E /I /Y
+
+    echo --- リソースファイルをコピーしています...
+    xcopy "%RESOURCE_DIR%" "dist\%APP_NAME%\resource\" /E /I /Y
+
 ) else (
-    echo エラー: %DIST_DIR% が見つかりません。PyInstallerのビルドに失敗した可能性があります。
+    echo エラー: dist\%APP_NAME% が見つかりません。
     pause
     exit /b 1
 )
 
-REM distディレクトリをzip圧縮
-powershell -Command "Compress-Archive -Path '%DIST_DIR%\*' -DestinationPath '%ZIP_NAME%'"
+echo --- 出力フォルダをZIPファイルに圧縮しています...
 
-REM 完了メッセージ
-echo ビルドとzip圧縮、ファイルのコピーが完了しました。
+REM distディレクトリ内のアプリケーションフォルダをzip圧縮
+powershell -Command "Compress-Archive -Path 'dist\%APP_NAME%' -DestinationPath '%APP_NAME%.zip' -Force"
+
+if %errorlevel% neq 0 (
+    echo.
+    echo !!! ZIP圧縮に失敗しました。
+    pause
+    exit /b 1
+)
+echo --- ZIP圧縮が完了しました: %APP_NAME%.zip
+echo.
+
+echo =================================
+echo  すべての処理が完了しました。
+echo =================================
+echo.
+
 pause
 endlocal
