@@ -1,11 +1,24 @@
 import webview
 import os
+import sys
 from qrcode_utils import Qrcode_utils
 
-# Reactアプリのパス
-frontend_dir = os.path.join(os.path.dirname(__file__), 'webui', 'dist')
-index_html = os.path.join(frontend_dir, 'index.html')
+def get_index_html_path():
+    """
+    実行ファイルからのindex.htmlの相対パス
+    """
+    if getattr(sys, 'frozen', False):
+        # sys.executable はEXE自身のパスを指す
+        index_html_path = os.path.join(os.path.dirname(sys.executable), os.path.join('webui', 'index.html'))
+    else:
+        # __file__ は現在のスクリプトのパス
+        frontend_dir = os.path.join(os.path.dirname(__file__), 'webui', 'dist')
+        index_html_path = os.path.join(frontend_dir, 'index.html')
+    
+    return index_html_path
 
+# Reactアプリのパス
+index_html = get_index_html_path()
 
 class Api:
     def __init__(self):
