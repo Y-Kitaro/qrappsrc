@@ -69,7 +69,7 @@ class Qrcode_utils:
         return "QR code creation completed successfully."
 
     def decode_qrcode(self):
-        qrcode_path = self.api.open_file()
+        qrcode_path = self.api.open_file(file_types=('Image Files (*.bmp;*.jpg;*.jpeg;*.gif;*.png)', 'All files (*.*)'))
         try:
             img = Image.open(qrcode_path).convert("RGB")
             open_cv_image = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)

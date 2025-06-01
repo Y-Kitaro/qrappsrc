@@ -56,7 +56,7 @@ const TabContent = ({ activeTab }) => {
     setQrcodeCsvFile('');
     try {
       if (window.pywebview && window.pywebview.api.open_file) {
-        const qrCodeCsvFile = await window.pywebview.api.open_file();
+        const qrCodeCsvFile = await window.pywebview.api.open_file(['CSV files (*.csv)', 'All files (*.*)'], false);
         setQrcodeCsvFile(qrCodeCsvFile);
       }
     } catch (err) {
