@@ -25,8 +25,8 @@ echo.
 
 REM 前回のビルド結果をクリーンアップ
 echo --- 前回のビルド結果を削除しています...
-if exist "dist\%APP_NAME%" (
-    rmdir /s /q "dist\%APP_NAME%"
+if exist "dist\" (
+    rmdir /s /q "dist\"
 )
 if exist "build" (
     rmdir /s /q "build"
@@ -54,8 +54,10 @@ echo --- PyInstallerでEXEをビルドしています...
 REM PyInstallerの実行
 %PYINSTALLER_CMD% ^
     --name %APP_NAME% ^
+    --onefile ^
     --windowed ^
     --clean ^
+    --add-binary "venv/Lib/site-packages/webview/lib;webview/lib" ^
     %SCRIPT_NAME%
 
 REM ビルド成功チェック
@@ -70,15 +72,15 @@ echo.
 
 echo --- 関連ファイルのコピー ---
 
-if exist "dist\%APP_NAME%" (
+if exist "dist\" (
     echo --- Web UI ファイルをコピーしています...
-    xcopy "%WEB_UI_DIR%" "dist\%APP_NAME%\webui\" /E /I /Y
+    xcopy "%WEB_UI_DIR%" "dist\webui\" /E /I /Y
 
     echo --- リソースファイルをコピーしています...
-    xcopy "%RESOURCE_DIR%" "dist\%APP_NAME%\resource\" /E /I /Y
+    xcopy "%RESOURCE_DIR%" "dist\resource\" /E /I /Y
 
 ) else (
-    echo エラー: dist\%APP_NAME% が見つかりません。
+    echo エラー: dist\ が見つかりません。
     pause
     exit /b 1
 )
@@ -86,7 +88,7 @@ if exist "dist\%APP_NAME%" (
 echo --- 出力フォルダをZIPファイルに圧縮しています...
 
 REM distディレクトリ内のアプリケーションフォルダをzip圧縮
-powershell -Command "Compress-Archive -Path 'dist\%APP_NAME%' -DestinationPath '%APP_NAME%.zip' -Force"
+powershell -Command "Compress-Archive -Path 'dist' -DestinationPath '%APP_NAME%.zip' -Force"
 
 if %errorlevel% neq 0 (
     echo.
