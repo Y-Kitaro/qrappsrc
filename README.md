@@ -9,7 +9,7 @@ QRコードの生成、一括作成を行うためのツール
 ## 実行ファイル
 | OS | 実行ファイル | バージョン |
 | ---- | ---- | ---- |
-| Windows | [リリース (v2.1.0)](https://github.com/Y-Kitaro/qrappsrc/releases/tag/v2.1.0) | 2.1.0 |
+| Windows | [リリース (v3.0.0)](https://github.com/Y-Kitaro/qrappsrc/releases/tag/v3.0.0) | 3.0.0 |
 
 
 ## 機能について
